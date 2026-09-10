@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mutual_fund_api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/mutual_fund_db
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=mutual-fund-ai-super-secret-key-change-in-production-32-chars
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./backend:/app
+      - ./web:/web
+
+  db:
+    image: postgres:15-alpine
+    container_name: mutual_fund_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mutual_fund_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: mutual_fund_redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:

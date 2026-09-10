@@ -1,0 +1,17 @@
+feature,importance
+vol_20d,0.23169157
+downside_vol_20d,0.14867868
+ret_20d,0.11660577
+drawdown_60d,0.103179984
+momentum_20d,0.08148287
+price_vs_ma20,0.048611853
+vol_ratio,0.04395988
+price_vs_ma60,0.037313167
+ret_60d,0.035888363
+vol_60d,0.03339795
+ret_1d,0.02520567
+price_vs_ma5,0.023393143
+category_id,0.023314603
+ret_5d,0.022833832
+ret_5d_rel,0.013022054
+ret_20d_rel,0.011420604
