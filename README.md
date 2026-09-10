@@ -1,181 +1,138 @@
-# 🚀 FundIQ — AI Mutual Fund Analytics & Predictive Platform
+# FundIQ
 
-An enterprise-grade **AI Mutual Fund Analytics & 4-Layer Recommendation Web Application** for evaluating **13,740+ Indian Mutual Fund schemes**. Powered by **XGBoost Machine Learning NAV predictions**, **historical risk modeling**, a **4-Layer Hybrid Suitability Engine**, and a modern **React + Vite Glassmorphism Interface** with **Explainable AI (XAI)** rationale drivers.
+FundIQ is an AI-assisted mutual-fund analytics platform for exploring Indian mutual-fund schemes, viewing risk and NAV analytics, generating suitability recommendations, and tracking a portfolio.
 
----
+The repository contains:
 
-## 🏗️ End-to-End System Architecture
+- A React, TypeScript, Vite, and TanStack Start frontend.
+- A FastAPI backend with SQLAlchemy, SQLite/PostgreSQL support, authentication, analytics, predictions, watchlist, portfolio, and recommendations APIs.
+- A reproducible SQLite seed script and the data/model inputs used by the backend.
 
-![FundIQ End-to-End Architecture](docs/architecture.jpg)
+> **Disclaimer:** FundIQ is a software project for research and demonstration. Its predictions and recommendations are not financial advice.
+
+## Architecture
 
 ```mermaid
-flowchart TB
-    subgraph S1["1. User (Investor)"]
-        U1["Investor Interacts with FundIQ"]
-        U2["• Search mutual funds\n• View predictions & analytics\n• Get recommendations\n• Manage watchlist & portfolio\n• Fill risk & goal questionnaire"]
-    end
-
-    subgraph S2["2. Frontend — FundIQ Web Application (React 19 + Vite + Tailwind)"]
-        UI1["Dashboard (Gainers & Risk Heatmap)"]
-        UI2["Discovery (Search & Filters)"]
-        UI3["Prediction Modal (XGBoost NAV Charts)"]
-        UI4["Questionnaire (Risk & Goal Profiler)"]
-        UI5["Portfolio Tracker (Holdings & Returns)"]
-    end
-
-    subgraph S3["3. Backend REST API — FastAPI (Python)"]
-        MAIN["app/main.py (FastAPI Web Server)"]
-        R1["/api/v1/schemes"]
-        R2["/api/v1/predictions"]
-        R3["/api/v1/recommendations"]
-        R4["/api/v1/analytics"]
-        R5["/api/v1/portfolio"]
-    end
-
-    subgraph S4["4. Data Ingestion & ETL Layer"]
-        CSV1["recommendation_data.csv (13,740 schemes)"]
-        CSV2["scheme_data_profile.csv (14,294 codes)"]
-        SEED["seed_database.py (ETL Pipeline Script)"]
-    end
-
-    subgraph S5["5. Persistence Layer (SQLite Database)"]
-        DB[("mutual_fund.db\n\nTables:\n• schemes (13,740 active)\n• scheme_profiles\n• nav_history\n• predictions\n• user_profiles\n• watchlist\n• portfolio_transactions")]
-    end
-
-    subgraph S6["6. Machine Learning & Inference Engine"]
-        M1["xgboost_nav_model.pkl (XGBClassifier)"]
-        M2["model_features.pkl (16 Features)"]
-        M3["model_config.pkl (Model Parameters)"]
-        ML_LOADER["model_loader.py (ModelRegistry)"]
-        PRED["predictor.py (Feature Extraction & Forecast)"]
-        REC_ENG["recommendation_engine.py (4-Layer Algorithm)"]
-    end
-
-    subgraph S8["8. 4-Layer Recommendation Engine (Internal Scoring Flow)"]
-        L1["Layer 1: Category Match (28%)\nFilter & Score Category Fit"]
-        L2["Layer 2: Risk Profile Alignment (24%)\nCompare Target vs 20D Volatility"]
-        L3["Layer 3: Time Horizon Compatibility (18%)\nScore 20D Momentum & 60D Drawdown"]
-        L4["Layer 4: ML XGBoost Score (30%)\nUpward Probability & Return Scale"]
-        FINAL["🏆 Final Result: Top Schemes\n(Suitability Score 0 - 100)"]
-    end
-
-    %% Interactions
-    U1 --> UI4
-    UI4 -- "API Requests (JSON)" --> S3
-    MAIN --> R1 & R2 & R3 & R4 & R5
-    S4 -- "Bulk Insert (Cleaned Data)" --> DB
-    DB <--> S6
-    L1 --> L2 --> L3 --> L4 --> FINAL
+flowchart LR
+    User[Investor] --> Frontend[React + Vite frontend]
+    Frontend -->|Currently uses deterministic demo data| Demo[src/lib/fund-data.ts]
+    Frontend -.->|Integration target| API[FastAPI REST API]
+    API --> Routes[API v1 routers]
+    Routes --> DB[(SQLite or PostgreSQL)]
+    Routes --> ML[Prediction and recommendation modules]
+    Seed[scripts/seed_database.py] --> DB
+    Data[data/recommendation_data.csv] --> Seed
+    Artifacts[backend/models_artifacts] --> ML
 ```
 
----
+### Runtime components
 
-## 🧩 Architectural Component Breakdown
+| Component | Location | Responsibility |
+| --- | --- | --- |
+| Frontend | `frontend/` | Dashboard, discovery, prediction, questionnaire, and portfolio UI. The current UI uses deterministic local data in `frontend/src/lib/fund-data.ts`. |
+| Backend | `backend/app/` | FastAPI application and `/api/v1` routes for auth, schemes, analytics, predictions, recommendations, watchlist, and portfolio. |
+| Seed pipeline | `scripts/seed_database.py` | Creates the SQLAlchemy tables and loads the included recommendation dataset into SQLite. |
+| Source data | `data/` and `backend/data/` | CSV inputs used by the seed process and supporting analysis. |
+| ML artifacts | `backend/models_artifacts/` | Small runtime model files loaded by the prediction system. |
 
-### 1. **User Interaction Layer**
-- Allows investors to perform multi-factor risk assessments, view short-term XGBoost NAV return predictions, track portfolios, and search 13,740+ Indian mutual fund schemes.
-
-### 2. **Frontend Web Application (`FundIQ/frontend/`)**
-- Built using **React 19**, **TypeScript**, **Vite**, **TanStack Router**, and **Tailwind CSS**.
-- **Views**: Interactive Dashboard, Fund Discovery, Scheme Analytics Modal (Recharts NAV trends & MA20/MA60 overlays), Questionnaire Wizard, and Portfolio Tracker.
-
-### 3. **Backend REST API (`FundIQ/backend/`)**
-- High-performance Python **FastAPI** web server with modular routing:
-  - `/api/v1/schemes`: Browse and search 13,740 schemes.
-  - `/api/v1/predictions`: Fetch XGBoost 5-observation forward NAV return predictions.
-  - `/api/v1/recommendations`: Execute 4-layer engine and persist recommendation logs.
-  - `/api/v1/analytics`: Retrieve NAV historical volatility and risk metrics.
-  - `/api/v1/portfolio`: Manage user watchlist and portfolio holdings.
-
-### 4. **Data Ingestion & ETL Layer (`FundIQ/scripts/`)**
-- Ingests raw time-series data from `recommendation_data.csv` (13,740 schemes) and scheme profiles.
-- `seed_database.py` cleans missing attributes, calculates benchmark initial states, and bulk seeds SQLite database tables.
-
-### 5. **Persistence Layer (`mutual_fund.db`)**
-- **SQLite Relational Database** storing 12 ORM tables (`schemes`, `nav_history`, `predictions`, `user_profiles`, `recommendations`, `recommendation_items`, `watchlist`, `portfolio_transactions`).
-
-### 6. **Machine Learning & Inference Engine (`FundIQ/backend/app/ml/`)**
-- **Model Files**: `xgboost_nav_model.pkl`, `model_features.pkl` (16 feature vectors), `model_config.pkl`.
-- **`model_loader.py`**: Model Registry loading models into memory at application startup.
-- **`predictor.py`**: Feature vector extractor and 5-observation return predictor.
-- **`recommendation_engine.py`**: Multi-factor scoring engine with AMC anti-clustering and variant deduplication.
-
-### 7. **4-Layer Recommendation Scoring Formula**
-$$\text{Final Score} = 0.28 \times \text{Category Match} + 0.24 \times \text{Risk Alignment} + 0.18 \times \text{Horizon Compatibility} + 0.30 \times \text{ML XGBoost Score}$$
-
----
-
-## 🌟 Model Performance Highlights
-
-- **Overall Directional Accuracy**: **75.37%** across 13,740 schemes
-- **Debt Scheme Directional Accuracy**: **82.52%**
-- **Feature Vector**: `ret_1d`, `ret_5d`, `ret_20d`, `ret_60d`, `vol_20d`, `vol_60d`, `momentum_20d`, `downside_vol_20d`, `drawdown_60d`, `price_vs_ma20`, `price_vs_ma60`.
-
----
-
-## 🚀 Step-by-Step Instructions to Run the Project
+## Quick Start
 
 ### Prerequisites
-- **Python**: 3.10 or higher
-- **Node.js**: 18 or higher (with npm)
 
----
+- Git
+- Python 3.10 or newer
+- Node.js 18 or newer and npm
 
-### Step 1: Start the FastAPI Backend Server
+### 1. Clone the repository
 
-1. Open a terminal and navigate to the backend directory:
-   ```bash
-   cd FundIQ/backend
-   ```
+```bash
+git clone https://github.com/Hari-Officia/FundIQ.git
+cd FundIQ
+```
 
-2. Install Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 2. Start the backend
 
-3. Seed the SQLite Database with all 13,740 schemes:
-   ```bash
-   python ../scripts/seed_database.py
-   ```
+Create a virtual environment, install dependencies, and seed the local SQLite database:
 
-4. Start the FastAPI server using Uvicorn:
-   ```bash
-   python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-   ```
+```bash
+cd backend
+python -m venv .venv
+```
 
----
+Windows PowerShell:
 
-### Step 2: Start the React Web Frontend
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
 
-1. Open a second terminal window and navigate to the frontend directory:
-   ```bash
-   cd FundIQ/frontend
-   ```
+macOS/Linux:
 
-2. Install Node.js dependencies:
-   ```bash
-   npm install
-   ```
+```bash
+source .venv/bin/activate
+```
 
-3. Start the Vite development server:
-   ```bash
-   npm run dev
-   ```
+Install and seed from the `backend` directory:
 
----
+```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python ..\scripts\seed_database.py
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
 
-## 🌐 Application Access Points
+On macOS/Linux, use `python ../scripts/seed_database.py` instead.
 
-| Service | URL | Description |
-| :--- | :--- | :--- |
-| 🚀 **Web Application UI** | **`http://localhost:8080`** (or `http://localhost:8000`) | Main React + Vite Glassmorphism Web App |
-| ⚙️ **FastAPI Backend Server** | **`http://localhost:8000`** | REST API Server |
-| 📖 **API Documentation** | **`http://localhost:8000/docs`** | Interactive Swagger API Docs |
-| 🏥 **Health Check** | **`http://localhost:8000/health`** | System Health Verification Endpoint |
+The backend reads `.env` when present and otherwise uses local SQLite defaults. Copy `backend/.env.example` to `backend/.env` only when you need to override those defaults. Never commit `.env` or a generated database.
 
----
+### 3. Start the frontend
 
-## 🔑 Demo Login Credentials
+Open a second terminal at the repository root:
 
-- **Email**: `user@example.com`
-- **Password**: `Password123!`
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+Open the URL printed by Vite, normally `http://localhost:5173`.
+
+## Service URLs
+
+| Service | URL |
+| --- | --- |
+| Frontend | `http://localhost:5173` |
+| Backend health | `http://127.0.0.1:8000/health` |
+| Swagger API docs | `http://127.0.0.1:8000/docs` |
+| OpenAPI JSON | `http://127.0.0.1:8000/api/v1/openapi.json` |
+
+The backend root redirects to port 8080 for legacy deployments; use the frontend URL printed by Vite for local development.
+
+## Docker Compose (optional)
+
+Docker Compose starts the backend with PostgreSQL and Redis:
+
+```bash
+docker compose up --build
+```
+
+The backend is available at `http://127.0.0.1:8000`. The Compose database is empty on first start, so seed it after the services are running with a backend container command or use the local SQLite workflow above. The frontend is intentionally run separately with npm.
+
+## Useful checks
+
+```bash
+# Frontend
+cd frontend
+npm run build
+npm run lint
+
+# Backend, from backend/ with the virtual environment active
+python -m compileall app
+```
+
+## Repository hygiene
+
+Tracked files include source code, lockfiles, documentation, datasets required by the seed process, and runtime ML artifacts. Local secrets, virtual environments, generated databases, frontend build output, dependency folders, archives, and large training-only files are ignored by Git.
+
+## License
+
+See [LICENSE](LICENSE).

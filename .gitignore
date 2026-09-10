@@ -4,6 +4,12 @@ __pycache__/
 *$py.class
 *.so
 .Python
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
 env/
 build/
 develop-eggs/
@@ -28,10 +34,16 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 .output/
 .nitro/
 .wrangler/
 .vite/
+dist/
+frontend/tsconfig.tsbuildinfo
+
+# Local archives and exports
+*.zip
 
 # Large raw datasets (> 100MB)
 *.parquet

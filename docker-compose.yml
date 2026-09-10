@@ -17,7 +17,6 @@ services:
       - redis
     volumes:
       - ./backend:/app
-      - ./web:/web
 
   db:
     image: postgres:15-alpine
